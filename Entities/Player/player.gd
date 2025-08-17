@@ -13,7 +13,7 @@ var jumped = 0
 func _ready():
 	screen_size = get_viewport_rect().size
 
-func _process(delta):
+func _process(_delta):
 #	reserved for animation and general function for character
 	pass
 
