@@ -21,8 +21,6 @@ func _process(_delta):
 
 func _physics_process(delta: float) -> void:
 	handle_walk()
-
-	handle_walk()
 	if velocity.y <= MAX_GRAVITY:
 		velocity.y += gravity * delta
 	handle_jump()
@@ -63,3 +61,4 @@ func handle_wall_jump():
 		var layers = get_collide_physics_layers()
 		if GameEnums.PHYSICS_LAYERS.CLIMB_WALL in layers:
 			velocity.y = WALL_GRAVITY
+			jumped = 0
