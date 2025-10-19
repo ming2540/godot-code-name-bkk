@@ -31,7 +31,21 @@ func _physics_process(delta: float) -> void:
 
 func handle_walk():
 	var input_direction = Input.get_axis("move_left", "move_right")
-	velocity.x = SPEED * input_direction
+	if input_direction:
+		if abs(velocity.x) >= SPEED:
+			velocity.x = SPEED * input_direction
+		else:
+			velocity.x += input_direction * ACCELERATE
+	else:
+#		handle friction
+		if velocity.x > 0:
+			velocity.x -= ACCELERATE
+			if velocity.x < 0:
+				velocity.x = 0
+		elif velocity.x < 0:
+			velocity.x += ACCELERATE
+			if velocity.x > 0:
+				velocity.x = 0
 
 func get_jump_speed():
 	return JUMP_SPEED if jumped == 0 else MULITPLE_JUMP_SPEED
