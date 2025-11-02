@@ -1,16 +1,31 @@
 extends CharacterBody2D
 
+# WALK CONFIG
 @export var SPEED = 400
 @export var ACCELERATE = 50
+# JUMP CONFIG
 @export var MAX_GRAVITY = 500
 @export var WALL_GRAVITY = 50
-@export var JUMP_SPEED = 400
-@export var MULITPLE_JUMP_SPEED = 300
+@export var JUMP_SPEED = 600
+@export var MULITPLE_JUMP_SPEED = 500
 @export var MAX_JUMP = 2
+@export var JUMP_BUFFER_TIME = 0.1
+@export var JUMP_FORGIVENESS_TIME = 0.15
+@export var JUMP_CANCELING_VELOCITY = 0.5
+# DASH CONFIG
+@export var MAX_DASH = 1
+@export var DASH_COOLDOWN_TIME = 1
+@export var DASH_SPEED = 1500
 
-var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 var screen_size
+# jump
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 var jumped = 0
+var jump_buffer_timer = 0
+var jump_forgiveness_timer = 0
+# dash
+var dash_cooldown_timer = 0
+var dash_direction = 1
 
 func _ready():
 	screen_size = get_viewport_rect().size
@@ -20,18 +35,19 @@ func _process(_delta):
 	pass
 
 func _physics_process(delta: float) -> void:
-	handle_walk()
-	if velocity.y <= MAX_GRAVITY:
-		velocity.y += gravity * delta
-	handle_jump()
-	handle_wall_jump()
+	handle_gravity(delta)
+	handle_walk(delta)
+	#handle_dash(delta)
+	handle_jump(delta)
+	#handle_wall_jump()
 	move_and_slide()
 	if is_on_floor():
 		jumped = 0
 
-func handle_walk():
+func handle_walk(delta):
 	var input_direction = Input.get_axis("move_left", "move_right")
 	if input_direction:
+		dash_direction = input_direction
 		if abs(velocity.x) >= SPEED:
 			velocity.x = SPEED * input_direction
 		else:
@@ -47,21 +63,36 @@ func handle_walk():
 			if velocity.x > 0:
 				velocity.x = 0
 
-func get_jump_speed():
-	return JUMP_SPEED if jumped == 0 else MULITPLE_JUMP_SPEED
+func handle_gravity(delta):
+	if velocity.y <= MAX_GRAVITY:
+		velocity.y += gravity * delta
 
-func handle_jump():
+func handle_jump(delta):
 	var jump_key_pressed = Input.is_action_just_pressed("jump")
 	var is_rising = velocity.y < 0
 	var is_jump_canceled = Input.is_action_just_released("jump") and is_rising 
-	var jump_available = jumped < MAX_JUMP
 
-	if jump_key_pressed and jump_available:
-		velocity.y -= (get_jump_speed() + velocity.y)
-		jumped += 1
+	if is_on_floor():
+		jump_forgiveness_timer = JUMP_FORGIVENESS_TIME
+	if jump_forgiveness_timer > 0:
+		jump_forgiveness_timer = max(jump_forgiveness_timer - delta, 0.0)
+
+	if jump_key_pressed:
+		jump_buffer_timer = JUMP_BUFFER_TIME
+	else:
+		jump_buffer_timer = max(jump_buffer_timer - delta, 0)
 	if is_jump_canceled:
-		velocity.y = 0
-		
+		velocity.y *= JUMP_CANCELING_VELOCITY
+	if jump_buffer_timer > 0 and jump_forgiveness_timer > 0:
+		velocity.y -= (JUMP_SPEED + velocity.y)
+		jump_buffer_timer = 0
+		jump_forgiveness_timer = 0
+		jumped += 1
+	var jump_available = jumped < MAX_JUMP
+	if jump_key_pressed and not is_on_floor() and jump_available:
+		velocity.y -=  (MULITPLE_JUMP_SPEED + velocity.y)
+		jumped += 1
+
 func get_collide_physics_layers():
 	var layers = []
 	for collision_id in get_slide_collision_count():
@@ -76,3 +107,10 @@ func handle_wall_jump():
 		if GameEnums.PHYSICS_LAYERS.CLIMB_WALL in layers:
 			velocity.y = WALL_GRAVITY
 			jumped = 0
+
+func handle_dash(delta):
+	var dash_key_pressed = Input.is_action_just_pressed("dash")
+	if dash_key_pressed and dash_cooldown_timer == 0:
+		velocity.x += dash_direction * (velocity.x + DASH_SPEED)
+	if dash_cooldown_timer > 0:
+		dash_cooldown_timer = max(dash_cooldown_timer - delta, 0)
