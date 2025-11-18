@@ -1,0 +1,49 @@
+[gd_scene load_steps=8 format=3 uid="uid://yassujeqrksk"]
+
+[ext_resource type="Script" uid="uid://cqkml7qeuagdh" path="res://Entities/JumpDust/jump_dust.gd" id="1_0rm26"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_0rm26"]
+load_path = "res://.godot/imported/DoubleJump01.png-a8ae8d8fda86c9f5bf817d35eb79f589.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_8ebjo"]
+load_path = "res://.godot/imported/DoubleJump02.png-8d15e229ee53aae62d65f2d7d73f2e95.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5r8g0"]
+load_path = "res://.godot/imported/DoubleJump03.png-62cb7df16d22126079c26aa8a43cb626.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_i2qxc"]
+load_path = "res://.godot/imported/DoubleJump04.png-411627aa1f61b06be551629472a520c4.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_oj7s4"]
+load_path = "res://.godot/imported/DoubleJump05.png-330e33d7dd1a237419848c7fc979a55f.ctex"
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5w7bi"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("CompressedTexture2D_0rm26")
+}, {
+"duration": 1.0,
+"texture": SubResource("CompressedTexture2D_8ebjo")
+}, {
+"duration": 1.0,
+"texture": SubResource("CompressedTexture2D_5r8g0")
+}, {
+"duration": 1.0,
+"texture": SubResource("CompressedTexture2D_i2qxc")
+}, {
+"duration": 1.0,
+"texture": SubResource("CompressedTexture2D_oj7s4")
+}],
+"loop": false,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_5w7bi")
+frame_progress = 0.942191
+speed_scale = 2.0
+script = ExtResource("1_0rm26")
+
+[connection signal="animation_finished" from="." to="." method="_on_animation_finished"]

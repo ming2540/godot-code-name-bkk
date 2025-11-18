@@ -1,8 +1,8 @@
 extends CharacterBody2D
 
 # WALK CONFIG
-@export var SPEED = 400
-@export var ACCELERATE = 50
+@export var SPEED = 500
+@export var ACCELERATE = 30
 # JUMP CONFIG
 @export var MAX_GRAVITY = 500
 @export var WALL_GRAVITY = 50
@@ -12,19 +12,26 @@ extends CharacterBody2D
 @export var JUMP_BUFFER_TIME = 0.1
 @export var JUMP_FORGIVENESS_TIME = 0.15
 @export var JUMP_CANCELING_VELOCITY = 0.5
+@export var JUMP_APEX = 300
+@export var JumpDust: PackedScene
+@export var DashDust: PackedScene 
 # DASH CONFIG
-@export var MAX_DASH = 1
-@export var DASH_COOLDOWN_TIME = 1
-@export var DASH_SPEED = 1500
+@export var DASH_DURATION = 0.3
+@export var DASH_COOLDOWN_TIME = 0.6
+@export var DASH_SPEED = 1000
 
-var screen_size
+@onready var screen_size
+# walk state
+var latest_direction = 1
+var prev_velocity_x = 0
 # jump
 var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 var jumped = 0
 var jump_buffer_timer = 0
 var jump_forgiveness_timer = 0
 # dash
-var dash_cooldown_timer = 0
+var dashing = false
+var dash_cooldown_time = 0
 var dash_direction = 1
 
 func _ready():
@@ -32,12 +39,33 @@ func _ready():
 
 func _process(_delta):
 #	reserved for animation and general function for character
-	pass
+	var input_direction = Input.get_axis("move_left", "move_right")
+	if input_direction != 0 and not dashing:
+		$AnimatedSprite2D.flip_h = input_direction < 0
+	if dashing:
+		$AnimatedSprite2D.animation = "dash"
+	elif is_on_floor():
+		if input_direction != 0:
+			$AnimatedSprite2D.animation = "run"
+		elif velocity.x != 0:
+			$AnimatedSprite2D.animation = "stop_run"
+		else:
+			$AnimatedSprite2D.animation = "idle"
+	else:
+		if velocity.y < 0:
+			$AnimatedSprite2D.animation = "jump_rise"
+		elif velocity.y > 0:
+			if velocity.y < JUMP_APEX:
+				$AnimatedSprite2D.animation = "jump_mid"
+			else:
+				$AnimatedSprite2D.animation = "jump_fall"
+	$AnimatedSprite2D.play()
 
 func _physics_process(delta: float) -> void:
+	snap_velocity()
 	handle_gravity(delta)
 	handle_walk(delta)
-	#handle_dash(delta)
+	handle_dash(delta)
 	handle_jump(delta)
 	#handle_wall_jump()
 	move_and_slide()
@@ -45,9 +73,11 @@ func _physics_process(delta: float) -> void:
 		jumped = 0
 
 func handle_walk(delta):
+	if dashing:
+		return
 	var input_direction = Input.get_axis("move_left", "move_right")
 	if input_direction:
-		dash_direction = input_direction
+		latest_direction = input_direction
 		if abs(velocity.x) >= SPEED:
 			velocity.x = SPEED * input_direction
 		else:
@@ -64,10 +94,12 @@ func handle_walk(delta):
 				velocity.x = 0
 
 func handle_gravity(delta):
-	if velocity.y <= MAX_GRAVITY:
+	if velocity.y <= MAX_GRAVITY and not dashing:
 		velocity.y += gravity * delta
 
 func handle_jump(delta):
+	if dashing:
+		return
 	var jump_key_pressed = Input.is_action_just_pressed("jump")
 	var is_rising = velocity.y < 0
 	var is_jump_canceled = Input.is_action_just_released("jump") and is_rising 
@@ -90,6 +122,7 @@ func handle_jump(delta):
 		jumped += 1
 	var jump_available = jumped < MAX_JUMP
 	if jump_key_pressed and not is_on_floor() and jump_available:
+		render_jump_dust()
 		velocity.y -=  (MULITPLE_JUMP_SPEED + velocity.y)
 		jumped += 1
 
@@ -110,7 +143,29 @@ func handle_wall_jump():
 
 func handle_dash(delta):
 	var dash_key_pressed = Input.is_action_just_pressed("dash")
-	if dash_key_pressed and dash_cooldown_timer == 0:
-		velocity.x += dash_direction * (velocity.x + DASH_SPEED)
-	if dash_cooldown_timer > 0:
-		dash_cooldown_timer = max(dash_cooldown_timer - delta, 0)
+	dash_cooldown_time = max(dash_cooldown_time - delta, 0)
+	if dash_key_pressed and not dashing and not dash_cooldown_time:
+		dashing = true
+		dash_cooldown_time = DASH_COOLDOWN_TIME
+		get_tree().create_timer(DASH_DURATION).timeout.connect(_end_dash)
+		velocity.x = latest_direction * DASH_SPEED
+		velocity.y = 0
+		render_dash_dust()
+
+func _end_dash():
+	dashing = false
+	velocity.x = 0
+
+func snap_velocity():
+	prev_velocity_x = velocity.x
+
+func render_dash_dust():
+	var dust_instance = DashDust.instantiate()
+	get_tree().current_scene.add_child(dust_instance)
+	dust_instance.global_position = $Marker2D.global_position
+	dust_instance.flip_h = latest_direction < 0
+
+func render_jump_dust():
+	var dust_instance = JumpDust.instantiate()
+	get_tree().current_scene.add_child(dust_instance)
+	dust_instance.global_position = $Marker2D.global_position
