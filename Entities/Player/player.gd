@@ -3,6 +3,8 @@ extends CharacterBody2D
 # WALK CONFIG
 @export var SPEED = 500
 @export var ACCELERATE = 30
+# CRAWL CONFIG
+@export var CRAWL_SPEED = 100
 # JUMP CONFIG
 @export var MAX_GRAVITY = 500
 @export var WALL_GRAVITY = 50
@@ -16,11 +18,17 @@ extends CharacterBody2D
 @export var JumpDust: PackedScene
 @export var DashDust: PackedScene 
 # DASH CONFIG
-@export var DASH_DURATION = 0.3
+@export var DASH_DURATION = 0.2
 @export var DASH_COOLDOWN_TIME = 0.6
 @export var DASH_SPEED = 1000
 
 @onready var screen_size
+@onready var standing_collision = $StandingCollision
+@onready var crawling_collision = $CrawlingCollision
+@onready var ceiling_detection = $CeilingDetection
+# duck state
+var is_duck = false
+var is_forced_duck = false
 # walk state
 var latest_direction = 1
 var prev_velocity_x = 0
@@ -43,12 +51,23 @@ func _process(_delta):
 	if input_direction != 0 and not dashing:
 		$AnimatedSprite2D.flip_h = input_direction < 0
 	if dashing:
-		$AnimatedSprite2D.animation = "dash"
+		if is_duck:
+			$AnimatedSprite2D.animation = "slide"
+		else:
+			$AnimatedSprite2D.animation = "dash"
 	elif is_on_floor():
 		if input_direction != 0:
-			$AnimatedSprite2D.animation = "run"
+			if is_duck:
+				$AnimatedSprite2D.animation = "crawl"
+			else:
+				$AnimatedSprite2D.animation = "run"
 		elif velocity.x != 0:
-			$AnimatedSprite2D.animation = "stop_run"
+			if is_duck:
+				$AnimatedSprite2D.animation = "crawl"
+			else:
+				$AnimatedSprite2D.animation = "stop_run"
+		elif is_duck:
+			$AnimatedSprite2D.animation = "duck"
 		else:
 			$AnimatedSprite2D.animation = "idle"
 	else:
@@ -68,9 +87,11 @@ func _physics_process(delta: float) -> void:
 	handle_dash(delta)
 	handle_jump(delta)
 	#handle_wall_jump()
+	handle_duck()
 	move_and_slide()
 	if is_on_floor():
 		jumped = 0
+	handle_collision()
 
 func handle_walk(delta):
 	if dashing:
@@ -78,8 +99,9 @@ func handle_walk(delta):
 	var input_direction = Input.get_axis("move_left", "move_right")
 	if input_direction:
 		latest_direction = input_direction
-		if abs(velocity.x) >= SPEED:
-			velocity.x = SPEED * input_direction
+		var speed = SPEED if not is_duck else CRAWL_SPEED
+		if abs(velocity.x) >= speed:
+			velocity.x = speed * input_direction
 		else:
 			velocity.x += input_direction * ACCELERATE
 	else:
@@ -98,7 +120,7 @@ func handle_gravity(delta):
 		velocity.y += gravity * delta
 
 func handle_jump(delta):
-	if dashing:
+	if dashing or is_forced_duck:
 		return
 	var jump_key_pressed = Input.is_action_just_pressed("jump")
 	var is_rising = velocity.y < 0
@@ -169,3 +191,19 @@ func render_jump_dust():
 	var dust_instance = JumpDust.instantiate()
 	get_tree().current_scene.add_child(dust_instance)
 	dust_instance.global_position = $Marker2D.global_position
+
+func handle_duck():
+	if not is_on_floor():
+		is_duck = false
+		return
+	is_forced_duck = ceiling_detection.is_colliding()
+	is_duck = Input.is_action_pressed("duck") or is_forced_duck
+	
+
+func handle_collision():
+	if is_duck:
+		standing_collision.set_deferred("disabled", true)
+		crawling_collision.set_deferred("disabled", false)
+	else:
+		standing_collision.set_deferred("disabled", false)
+		crawling_collision.set_deferred("disabled", true)
