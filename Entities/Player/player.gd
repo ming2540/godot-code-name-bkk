@@ -170,7 +170,8 @@ func get_collide_physics_layers():
 
 func handle_wall_slide():
 	if is_on_floor():
-		return
+		wall_sliding = false
+		return 
 	if is_on_wall() and Input.get_axis("move_left", "move_right"):
 		var layers = get_collide_physics_layers()
 		if GameEnums.PHYSICS_LAYERS.CLIMB_WALL in layers:
