@@ -6,7 +6,7 @@ extends CharacterBody2D
 # CRAWL CONFIG
 @export var CRAWL_SPEED = 100
 # JUMP CONFIG
-@export var MAX_GRAVITY = 500
+@export var MAX_GRAVITY = 800
 @export var JUMP_SPEED = 600
 @export var MULITPLE_JUMP_SPEED = 500
 @export var MAX_JUMP = 2
@@ -22,10 +22,16 @@ extends CharacterBody2D
 @export var DASH_COOLDOWN_TIME = 0.6
 @export var DASH_SPEED = 1000
 #WALL SLIDE & JUMP CONFIG
-@export var WALL_GRAVITY = 50
+@export var WALL_MAX_GRAVITY = 180
+@export var WALL_GRAVITY_FACTOR = 0.3
+@export var INITIAL_WALL_GRAVITY = 30
 @export var WALL_JUMP_DURATION = 0
 @export var WALL_JUMP_SPEED_HORIZONTAL = 350
 @export var WALL_JUMP_SPEED_VERTICAL = 700
+# BAD
+@export var HURT_DURATION = 0.5
+@export var KNOCKBACK_SPEED = 300
+@export var INVINCIBLE_DURATION = 2
 
 @onready var screen_size
 @onready var standing_collision = $StandingCollision
@@ -40,15 +46,18 @@ var latest_direction = 1
 var wall_sliding = false
 # wall jump state
 var wall_jumping = false
-# jump
+# jump state
 var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 var jumped = 0
 var jump_buffer_timer = 0
 var jump_forgiveness_timer = 0
-# dash
+# dash state
 var dashing = false
 var dash_cooldown_time = 0
 var dash_direction = 1
+# hurt state
+var hurting = false
+var invincible = false
 
 func _ready():
 	screen_size = get_viewport_rect().size
@@ -58,7 +67,9 @@ func _process(_delta):
 	var input_direction = Input.get_axis("move_left", "move_right")
 	if input_direction != 0 and not dashing:
 		$AnimatedSprite2D.flip_h = input_direction < 0
-	if wall_sliding:
+	if hurting:
+		$AnimatedSprite2D.animation = "knockback"
+	elif wall_sliding:
 		$AnimatedSprite2D.animation = "wall_slide"
 	elif dashing:
 		if crawling:
@@ -89,6 +100,11 @@ func _process(_delta):
 			else:
 				$AnimatedSprite2D.animation = "jump_fall"
 	$AnimatedSprite2D.play()
+	if invincible:
+		$AnimatedSprite2D.set_visible(randi_range(0,1))
+	else:
+		$AnimatedSprite2D.set_visible(true)
+
 
 func _physics_process(delta: float) -> void:
 	handle_gravity(delta)
@@ -99,12 +115,13 @@ func _physics_process(delta: float) -> void:
 	handle_wall_jump()
 	handle_duck()
 	move_and_slide()
+	render_collision()
 	if is_on_floor():
 		jumped = 0
 	handle_collision()
 
 func handle_walk(delta):
-	if dashing:
+	if disable_action():
 		return
 	var input_direction = Input.get_axis("move_left", "move_right")
 	if input_direction:
@@ -126,11 +143,18 @@ func handle_walk(delta):
 				velocity.x = 0
 
 func handle_gravity(delta):
-	if velocity.y <= MAX_GRAVITY and not dashing:
-		velocity.y += gravity * delta
+	if disable_action():
+		return
+	var max_gravity = WALL_MAX_GRAVITY if wall_sliding else MAX_GRAVITY
+	var target_gravity = gravity * WALL_GRAVITY_FACTOR if wall_sliding else gravity
+	if velocity.y < max_gravity:
+		velocity.y = min(velocity.y + (target_gravity * delta), max_gravity )
+	else:
+		velocity.y = max_gravity
+
 
 func handle_jump(delta):
-	if dashing or wall_sliding or forced_crawl:
+	if disable_action() or wall_sliding or forced_crawl:
 		return
 	var jump_key_pressed = Input.is_action_just_pressed("jump")
 	var is_rising = velocity.y < 0
@@ -167,13 +191,14 @@ func get_collide_physics_layers():
 	return layers
 
 func handle_wall_slide():
-	if is_on_floor():
+	if disable_action() or  is_on_floor():
 		wall_sliding = false
 		return 
 	if is_on_wall() and Input.get_axis("move_left", "move_right"):
 		var layers = get_collide_physics_layers()
 		if GameEnums.PHYSICS_LAYERS.CLIMB_WALL in layers:
-			velocity.y = WALL_GRAVITY
+			if not wall_sliding:
+				velocity.y = INITIAL_WALL_GRAVITY
 			wall_sliding = true
 			jumped = 0
 		else:
@@ -182,6 +207,8 @@ func handle_wall_slide():
 		wall_sliding = false
 
 func handle_wall_jump():
+	if disable_action():
+		return
 	var jump_key_pressed = Input.is_action_just_pressed("jump")
 	if wall_sliding and jump_key_pressed and not wall_jumping:
 		var push_back_direction = get_wall_normal().x
@@ -196,7 +223,7 @@ func _end_wall_jump():
 	wall_jumping = false
 
 func handle_dash(delta):
-	if wall_sliding:
+	if hurting or wall_sliding:
 		return
 	var dash_key_pressed = Input.is_action_just_pressed("dash")
 	dash_cooldown_time = max(dash_cooldown_time - delta, 0)
@@ -232,16 +259,36 @@ func render_wall_jump_dust():
 	wall_dust_instance.global_position = $Marker2D.global_position
 
 func handle_duck():
-	if not is_on_floor():
+	if disable_action() or not is_on_floor():
 		crawling = false
 		return
 	forced_crawl = ceiling_detection.is_colliding()
 	crawling = Input.is_action_pressed("crouch") or forced_crawl
 	
-func handle_collision():
+func render_collision():
 	if crawling:
 		standing_collision.set_deferred("disabled", true)
 		crawling_collision.set_deferred("disabled", false)
 	else:
 		standing_collision.set_deferred("disabled", false)
 		crawling_collision.set_deferred("disabled", true)
+
+func handle_collision():
+	var layers = get_collide_physics_layers()
+	if GameEnums.PHYSICS_LAYERS.DANGER_WALL in layers and not hurting and not invincible:
+		hurting = true
+		invincible = true
+		velocity.x = 0
+		velocity.x += -latest_direction * KNOCKBACK_SPEED
+		get_tree().create_timer(HURT_DURATION).timeout.connect(_end_hurt)
+		get_tree().create_timer(INVINCIBLE_DURATION).timeout.connect(_end_invincible)
+
+func _end_hurt():
+	hurting = false
+	velocity.x = 0
+
+func _end_invincible():
+	invincible = false
+
+func disable_action():
+	return dashing or hurting

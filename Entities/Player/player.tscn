@@ -1,4 +1,4 @@
-[gd_scene load_steps=63 format=3 uid="uid://beo5bhaci8tnf"]
+[gd_scene load_steps=69 format=3 uid="uid://beo5bhaci8tnf"]
 
 [ext_resource type="Script" uid="uid://c4ks5s1wayp5i" path="res://Entities/Player/player.gd" id="1_3uyv8"]
 [ext_resource type="Texture2D" uid="uid://bnxpje7i56v15" path="res://Entities/Player/Sprites/Idle/Idle01.png" id="2_7a1se"]
@@ -50,8 +50,14 @@
 [ext_resource type="PackedScene" uid="uid://yassujeqrksk" path="res://Entities/Particles/JumpDust/jump_dust.tscn" id="23_avsg8"]
 [ext_resource type="Texture2D" uid="uid://jmopvghc5acm" path="res://Entities/Player/Sprites/Slide/Slide01.png" id="37_fyltw"]
 [ext_resource type="Texture2D" uid="uid://dw5imuhj88pl2" path="res://Entities/Player/Sprites/Slide/Slide02.png" id="38_1birn"]
+[ext_resource type="Texture2D" uid="uid://usq86pftr88t" path="res://Entities/Player/Sprites/Knockback/Knockback01.png" id="38_y1ns3"]
 [ext_resource type="Texture2D" uid="uid://cfv7286cusg5s" path="res://Entities/Player/Sprites/Slide/Slide03.png" id="39_58aja"]
+[ext_resource type="Texture2D" uid="uid://cbp7a3m6cvfgj" path="res://Entities/Player/Sprites/Knockback/Knockback02.png" id="39_ujhkw"]
 [ext_resource type="Texture2D" uid="uid://drqjwc481mrr2" path="res://Entities/Player/Sprites/Slide/Slide04.png" id="40_mr25g"]
+[ext_resource type="Texture2D" uid="uid://dfsg48kk6tl0a" path="res://Entities/Player/Sprites/Knockback/Knockback03.png" id="40_wqp1d"]
+[ext_resource type="Texture2D" uid="uid://btdgw6t7d7or2" path="res://Entities/Player/Sprites/Knockback/Knockback04.png" id="41_xf0r2"]
+[ext_resource type="Texture2D" uid="uid://lsu4vxqba8wq" path="res://Entities/Player/Sprites/Knockback/Knockback05.png" id="42_vmpux"]
+[ext_resource type="Texture2D" uid="uid://b0ia3qeaenbx3" path="res://Entities/Player/Sprites/Knockback/Knockback06.png" id="43_8ioaw"]
 [ext_resource type="Texture2D" uid="uid://bgc4he7kp1bfw" path="res://Entities/Player/Sprites/WallSlide/WallSlide01.png" id="52_718ys"]
 [ext_resource type="Texture2D" uid="uid://dq4jffv7wtlf3" path="res://Entities/Player/Sprites/WallSlide/WallSlide02.png" id="53_8ogvp"]
 [ext_resource type="Texture2D" uid="uid://c68nn360g5q05" path="res://Entities/Player/Sprites/WallSlide/WallSlide03.png" id="54_keg2n"]
@@ -197,6 +203,29 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": ExtResource("38_y1ns3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("39_ujhkw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("40_wqp1d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("41_xf0r2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("42_vmpux")
+}, {
+"duration": 1.0,
+"texture": ExtResource("43_8ioaw")
+}],
+"loop": true,
+"name": &"knockback",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": ExtResource("9_0poeq")
 }, {
 "duration": 1.0,
@@ -297,7 +326,8 @@ WallJumpDust = ExtResource("4_8ogvp")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_3uyv8")
-animation = &"crouch"
+animation = &"knockback"
+frame_progress = 0.0998078
 speed_scale = 2.0
 
 [node name="StandingCollision" type="CollisionShape2D" parent="."]
