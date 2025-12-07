@@ -36,7 +36,6 @@ var crawling = false
 var forced_crawl = false
 # walk stated
 var latest_direction = 1
-var prev_velocity_x = 0
 # wall slide state
 var wall_sliding = false
 # wall jump state
@@ -92,7 +91,6 @@ func _process(_delta):
 	$AnimatedSprite2D.play()
 
 func _physics_process(delta: float) -> void:
-	snap_velocity()
 	handle_gravity(delta)
 	handle_walk(delta)
 	handle_dash(delta)
@@ -212,10 +210,10 @@ func handle_dash(delta):
 
 func _end_dash():
 	dashing = false
-	velocity.x = 0
-
-func snap_velocity():
-	prev_velocity_x = velocity.x
+	if velocity.x < 0:
+		velocity.x += SPEED
+	else:
+		velocity.x -= SPEED
 
 func render_dash_dust():
 	var dust_instance = DashDust.instantiate()
