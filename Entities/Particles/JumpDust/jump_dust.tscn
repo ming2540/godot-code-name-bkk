@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://yassujeqrksk"]
 
-[ext_resource type="Script" uid="uid://cqkml7qeuagdh" path="res://Entities/JumpDust/jump_dust.gd" id="1_0rm26"]
+[ext_resource type="Script" uid="uid://cqkml7qeuagdh" path="res://Entities/Particles/JumpDust/jump_dust.gd" id="1_0rm26"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_0rm26"]
 load_path = "res://.godot/imported/DoubleJump01.png-a8ae8d8fda86c9f5bf817d35eb79f589.ctex"

@@ -1,0 +1,46 @@
+[gd_scene load_steps=10 format=3 uid="uid://o1er5oo6d6l2"]
+
+[ext_resource type="Texture2D" uid="uid://ctvd71h4iv0vw" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust01.png" id="1_y1fbq"]
+[ext_resource type="Texture2D" uid="uid://drg26l60ivsi8" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust02.png" id="2_aokyk"]
+[ext_resource type="Texture2D" uid="uid://cewpv6rrlwan5" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust03.png" id="3_sgj7j"]
+[ext_resource type="Texture2D" uid="uid://e3iv5a125uro" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust04.png" id="4_otgak"]
+[ext_resource type="Texture2D" uid="uid://b1m1q2fwmxy43" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust05.png" id="5_o1stt"]
+[ext_resource type="Texture2D" uid="uid://ctubwf65kpyn6" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust06.png" id="6_6rbav"]
+[ext_resource type="Texture2D" uid="uid://sngp3adku6y0" path="res://Entities/Particles/DashDust/Sprites/Sprites/DashDust07.png" id="7_6fn15"]
+[ext_resource type="Script" uid="uid://c81tylyrkhx4g" path="res://Entities/Particles/DashDust/dash_dust.gd" id="8_bj603"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_6b8x4"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_y1fbq")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_aokyk")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_sgj7j")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_otgak")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_o1stt")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_6rbav")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_6fn15")
+}],
+"loop": false,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="DashDust" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_6b8x4")
+speed_scale = 3.0
+script = ExtResource("8_bj603")
+
+[connection signal="animation_finished" from="." to="." method="_on_animation_finished"]
